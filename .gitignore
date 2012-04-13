@@ -1,0 +1,39 @@
+# Temp Files #
+##############
+*~
+*.tmp*
+*.orig
+
+# Build #
+#########
+bin
+build
+libprosopon.so.*
+
+# Doc Files #
+#############
+doc
+
+# Project Files #
+#################
+.project
+
+# Version Control #
+###################
+.hg
+.bzr
+.svn
+
+# OS Files #
+############
+.DS_Store*
+ehthumbs.db
+Icon?
+Thumbs.db
+
+# Xcode#
+########
+*.pbxuser
+*.perspective
+*.perspectivev3
+*.xcuserdatad

@@ -72,9 +72,9 @@ instr_table:
 .word bf_nop # ) 41
 .word bf_nop # * 42
 .word bf_nop # + 43
-.word bf_nop # , 44
+.word print_out # , 44
 .word bf_nop # - 45
-.word bf_nop # . 46
+.word get_in # . 46
 .word bf_nop # / 47
 .word bf_nop # 0 48
 .word bf_nop # 1 49
@@ -267,7 +267,23 @@ bf_nop:
     move $v1, $a1 # copy data pointer
     jr $ra
 
+get_in:	
+	move	$t7, $v0	#Temporarily store $v0
+	li	$v0, 12		
+	syscall			#Character will be read into $v0
+	sb	$v0, 0($a1)	#Store $v0 into current data location
+	move	$v0, $t7	#Restore $v0
+	j	bf_nop		
 
+print_out:
+	move	$t7, $v0 	#Temporarily store $v0
+	move	$t8, $a0 	#Temporarily story $a0
+	li	$v0, 11		
+	lb	$a0, 0($a1) 	#Load the byte to print
+	syscall
+	move	$v0, $t7 	#Restore $v0
+	move	$a0, $t8 	#Restore $a0
+	j	bf_nop		
 
 
 

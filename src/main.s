@@ -268,22 +268,23 @@ bf_nop:
     jr $ra
 
 get_in:	
-	move	$t7, $v0	#Temporarily store $v0
-	li	$v0, 12		
+	li $v0, 12		
 	syscall			#Character will be read into $v0
-	sb	$v0, 0($a1)	#Store $v0 into current data location
-	move	$v0, $t7	#Restore $v0
-	j	bf_nop		
+	sb $v0, 0($a1)	#Store $v0 into current data location
+    addiu $v0, $a0, 1 # increase instr pointer by one
+    move $v1, $a1 # copy data pointer
+    jr $ra
 
 print_out:
-	move	$t7, $v0 	#Temporarily store $v0
-	move	$t8, $a0 	#Temporarily story $a0
-	li	$v0, 11		
-	lb	$a0, 0($a1) 	#Load the byte to print
+    addiu $t7, $a0, 1 # increase instr pointer by one
+    move $v1, $a1 # copy data pointer
+
+	li $v0, 11		
+	lb $a0, 0($a1) 	#Load the byte to print
 	syscall
-	move	$v0, $t7 	#Restore $v0
-	move	$a0, $t8 	#Restore $a0
-	j	bf_nop		
+	move $v0, $t7 	#Restore $v0
+    move $v1, $a1 # copy data pointer
+    jr $ra
 
 
 

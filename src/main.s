@@ -232,7 +232,7 @@ run_loop:
     blez $t0, exit 
     #
     lb $t0, 0($v0)
-    # Setup program arguments
+    # Setup instruction arguments
     move $a0, $v0
     move $a1, $v1
     # Get the instruction function

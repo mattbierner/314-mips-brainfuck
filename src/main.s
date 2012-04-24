@@ -18,7 +18,7 @@ request_file_text:  .asciiz "Enter a brainfuck file path: "
 file_open_error_text:  .asciiz "ERROR: There was a problem opening the requested file"
 file_read_error_text:  .asciiz "ERROR: There was a problem reading the requested file"
 
-the_file:  .asciiz "/Users/mattbierner/Desktop/314-mips-brainfuck/src/hello.bf"
+the_file:  .asciiz "/Users/mattbierner/Documents/School/current/314 Computer Archetecture/314-mips-brainfuck/example_programs/hello.bf"
 
 
 file:   .space 256 # Holds the file name
@@ -71,10 +71,10 @@ instr_table:
 .word bf_nop # ( 40
 .word bf_nop # ) 41
 .word bf_nop # * 42
-.word bf_nop # + 43
-.word get_in # , 44
-.word bf_nop # - 45
-.word print_out # . 46
+.word incr_byte # + 43
+.word bf_get_in # , 44
+.word bf_decr_byte # - 45
+.word bf_print_out # . 46
 .word bf_nop # / 47
 .word bf_nop # 0 48
 .word bf_nop # 1 49
@@ -88,9 +88,9 @@ instr_table:
 .word bf_nop # 9 57
 .word bf_nop # : 58
 .word bf_nop # ; 59
-.word bf_nop # < 60
+.word bf_decr_data_pntr # < 60
 .word bf_nop # = 61
-.word bf_nop # > 62
+.word bf_incr_data_pntr # > 62
 .word bf_nop # ? 63
 .word bf_nop # @ 64
 .word bf_nop # A 65
@@ -119,9 +119,9 @@ instr_table:
 .word bf_nop # X 88
 .word bf_nop # Y 89
 .word bf_nop # Z 90
-.word bf_nop # [ 91
+.word begin_bracket # [ 91
 .word bf_nop # \ 92
-.word bf_nop # ] 93
+.word end_bracket # ] 93
 .word bf_nop # ^ 94
 .word bf_nop # _ 95
 .word bf_nop # ` 96
@@ -263,95 +263,119 @@ exit:
 #
 # Used for every character besides the ones bf specifies
 bf_nop:
-
-	
-	# if instruction is > increase data pointer
-	li $t4, 62
-	beq $a0, $t4, incr_data_pntr
-	
-	# if instruction is < decrease data pointer
-	li $t4, 60
-	beq $a0, $t4, decr_data_pntr
-
-	# if instruction is + increase byte at data pointer
-	li $t4, 43
-	beq $a0, $t4, incr_byte
-
-	# if instruction is - decrease byte at data pointer
-	li $t4, 45
-	beq $a0, $t4, decr_byte
-
-	# if instruction is [ :
-	# if the byte at the data pointer is zero, then instead of moving the instruction pointer
- 	# forward to the next command, jump it forward to the command after the matching ] command
-	li $t4, 91
-	beq $a0, $t4, begin_bracket
-
-	# if instruction is ] :
-	# if the byte at the data pointer is nonzero, then instead of moving the instruction pointer
- 	# forward to the next command, jump it back to the command after the matching [ command
-	li $t4, 93
-	beq $a0, $t4, end_bracket
-
-
     addiu $v0, $a0, 1 # increase instr pointer by one
     move $v1, $a1 # copy data pointer
     jr $ra
-incr_data_pntr:
+    
 
+bf_incr_data_pntr:
 	addiu $v0, $a0, 1		# increase instruction pointer
 	addiu $v1, $a1, 1		# increase data pointer
 	jr $ra				# return to main
 
 
-decr_data_pntr:
-
+bf_decr_data_pntr:
 	addiu $v0, $a0, 1		# increase instruction pointer
-	li $t4, 1			# load 1 into t4 for subtraction
-	sub $v1, $a1, $t4		# decrease data pointer by 1
+	addiu $v1, $a1, -1		# decrease data pointer
 	jr $ra				# return to main
 
 
 incr_byte:
-
 	lb $t4, 0($a1)  		# load byte of data address into t4
 	addiu $t4, $t4, 1 		# increase byte of data address by 1
-	sw $t4, 0($v1) 			# store updated byte at return data address
+	sb $t4, 0($a1) 			# store updated byte at return data address
 	addiu $v0, $a0, 1 		# increase the instruction pointer
 	move $v1, $a1			# copy data address
 	jr $ra				# return to main
 	
 	
-decr_byte:
-
-	li $t4, 1			# used for subtraction
-	lb $t5, 0($a1)			# load byte of data address into t5
-	sub $t5, $t5, $t4		# decrease byte of data address by 1
-	sw $t5, 0($v1)			# store updated byte at return data address
+bf_decr_byte:
+	lb $t4, 0($a1)			# load byte of data address into t5
+	addiu $t4, $t4, -1		# decrease byte of data address by 1
+	sb $t4, 0($a1)			# store updated byte at return data address
 	addiu $v0, $a0, 1		# increase the instruction pointer
 	move $v1, $a1			# copy data address
 	jr $ra				# return to main
 
 
 begin_bracket:
-	
+    move $v0, $a0		# increase the instruction pointer
 	lb $t4, 0($a1)			# load byte of data address into t4
-	beq $t4, $0, end_bracket	# if byte at data pointer zero, jump forward to end_bracket
-	addiu $v0, $a0, 1		# increase the instruction pointer
+	bne $t4, $0, begin_bracket_done	# if byte is not zero, we are done
+    # else jump forward to instruction after matching ']'
+    li $t0, 1  # t0 = number of ] needed 
+    addi $v0, $a0, 1 # increase the instruction pointer
+
+begin_match_loop:
+    lb $t1, 0($v0) # load instr value
+    
+    li $t2, 91
+    beq $t1, $t2, begin_found_begin
+    
+    li $t2, 93
+    beq $t1, $t2, begin_found_end
+    j begin_match_loop_done
+    
+begin_found_begin:
+    addi $t0, $t0, 1
+    j begin_match_loop_done
+    
+begin_found_end:
+    addi $t0, $t0, -1
+    beq $t0, $0, begin_bracket_done
+    j begin_match_loop_done
+
+begin_match_loop_done:
+    addiu $v0, $v0, 1
+    j begin_match_loop
+    
+begin_bracket_done:
+    addiu $v0, $v0, 1
 	move $v1, $a1			# copy data address
 	jr $ra				# return to main
+
 
 
 end_bracket:
-	
+    move $v0, $a0		# increase the instruction pointer
 	lb $t4, 0($a1)			# load byte of data address into t4
-	bne $t4, $0, begin_bracket	# if byte at data pointer nonzero, jump back to begin_bracket
-	addiu $v0, $a0, 1		# increase the instruction pointer
+	beq $t4, $0, end_bracket_done	# if byte is not zero, we are done
+    # else jump forward to instruction after matching ']'
+    li $t0, 1  # t0 = number of ] needed 
+    addiu $v0, $a0, -1 # increase the instruction pointer
+
+end_match_loop:
+    lb $t1, 0($v0) # load instr value
+    
+    li $t2, 91
+    beq $t1, $t2, end_found_begin
+    
+    li $t2, 93
+    beq $t1, $t2, end_found_end
+    j end_match_loop_done
+    
+end_found_begin:
+    addi $t0, $t0, -1
+    beq $t0, $0, end_bracket_done
+    j end_match_loop_done
+    
+end_found_end:
+    addi $t0, $t0, 1
+    j end_match_loop_done
+
+end_match_loop_done:
+    addiu $v0, $v0, -1
+    j end_match_loop
+    
+end_bracket_done:
+    addiu $v0, $v0, 1
 	move $v1, $a1			# copy data address
 	jr $ra				# return to main
 
 
-get_in:	
+
+
+bf_get_in:	
 	li $v0, 12		
 	syscall			#Character will be read into $v0
 	sb $v0, 0($a1)	#Store $v0 into current data location
@@ -359,7 +383,8 @@ get_in:
     move $v1, $a1 # copy data pointer
     jr $ra
 
-print_out:
+
+bf_print_out:
     addiu $t7, $a0, 1 # increase instr pointer by one
     move $v1, $a1 # copy data pointer
 

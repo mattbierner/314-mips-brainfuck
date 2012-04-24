@@ -119,9 +119,9 @@ instr_table:
 .word bf_nop # X 88
 .word bf_nop # Y 89
 .word bf_nop # Z 90
-.word begin_bracket # [ 91
+.word bf_begin_bracket # [ 91
 .word bf_nop # \ 92
-.word end_bracket # ] 93
+.word bf_end_bracket # ] 93
 .word bf_nop # ^ 94
 .word bf_nop # _ 95
 .word bf_nop # ` 96
@@ -174,7 +174,7 @@ instr_table:
 # s3 holds the end of the instr data
 ################################################################################
 # Get the input filename
-.global main
+.globl main
     # print out text prompt
     la $a0, request_file_text 
     li $v0, 4
@@ -310,92 +310,96 @@ bf_decr_byte:
 	jr $ra
 
 
-begin_bracket:
-    move $v0, $a0		# increase the instruction pointer
-	lb $t4, 0($a1)			# load byte of data address into t4
+# Instruction bf_begin_bracket '['
+#
+# If the value at the data pointer is zero, than move to instruction after
+# matching ']' instruction.
+bf_begin_bracket:
+    move $v0, $a0 # copy instruction pointer into v0
+	lb $t4, 0($a1) # load byte of data address into t4
 	bne $t4, $0, begin_bracket_done	# if byte is not zero, we are done
     # else jump forward to instruction after matching ']'
-    li $t0, 1  # t0 = number of ] needed 
-    addi $v0, $a0, 1 # increase the instruction pointer
+    li $t0, 1  # t0 = number of ']' needed for matching
 
 begin_match_loop:
+    addi $v0, $v0, 1 # increase the instruction pointer
     lb $t1, 0($v0) # load instr value
-    
-    li $t2, 91
+
+# check instruction
+    li $t2, 91 # '['
     beq $t1, $t2, begin_found_begin
-    
-    li $t2, 93
+    li $t2, 93 # ']'
     beq $t1, $t2, begin_found_end
-    j begin_match_loop_done
+    j begin_match_loop # else continue
     
 begin_found_begin:
-    addi $t0, $t0, 1
-    j begin_match_loop_done
+    addi $t0, $t0, 1 # add one to number of ']' needed
+    j begin_match_loop
     
 begin_found_end:
-    addi $t0, $t0, -1
-    beq $t0, $0, begin_bracket_done
-    j begin_match_loop_done
-
-begin_match_loop_done:
-    addiu $v0, $v0, 1
+    addi $t0, $t0, -1 # decrease number of ']' needed
+    beq $t0, $0, begin_bracket_done # if last ']' found, we are done
     j begin_match_loop
     
 begin_bracket_done:
-    addiu $v0, $v0, 1
-	move $v1, $a1			# copy data address
-	jr $ra				# return to main
+    addiu $v0, $v0, 1 # get next instruction
+	move $v1, $a1 # copy data address
+	jr $ra
 
 
-
-end_bracket:
-    move $v0, $a0		# increase the instruction pointer
-	lb $t4, 0($a1)			# load byte of data address into t4
+# Instruction bf_end_bracket ']'
+#
+# If the value at the data pointer is nonzero, than move to instruction after
+# matching '[' instruction.
+bf_end_bracket:
+    move $v0, $a0 # copy instruction pointer into v0
+	lb $t4, 0($a1) # load byte of data address into t4
 	beq $t4, $0, end_bracket_done	# if byte is not zero, we are done
-    # else jump forward to instruction after matching ']'
-    li $t0, 1  # t0 = number of ] needed 
-    addiu $v0, $a0, -1 # increase the instruction pointer
+    # else jump forward to instruction after matching '['
+    li $t0, 1  # t0 = number of '[' needed 
 
 end_match_loop:
+    addiu $v0, $v0, -1 # increase the instruction pointer
     lb $t1, 0($v0) # load instr value
     
-    li $t2, 91
+# check instruction
+    li $t2, 91 # '['
     beq $t1, $t2, end_found_begin
-    
-    li $t2, 93
+    li $t2, 93 # ']'
     beq $t1, $t2, end_found_end
-    j end_match_loop_done
+    j end_match_loop # else continue
     
 end_found_begin:
-    addi $t0, $t0, -1
-    beq $t0, $0, end_bracket_done
-    j end_match_loop_done
+    addi $t0, $t0, -1  # decrease number of '[' needed
+    beq $t0, $0, end_bracket_done # if last '[' found, we are done
+    j end_match_loop
     
 end_found_end:
-    addi $t0, $t0, 1
-    j end_match_loop_done
-
-end_match_loop_done:
-    addiu $v0, $v0, -1
+    addi $t0, $t0, 1 # add one to number of '[' needed
     j end_match_loop
     
 end_bracket_done:
-    addiu $v0, $v0, 1
-	move $v1, $a1			# copy data address
-	jr $ra				# return to main
+    addiu $v0, $v0, 1 # get next instruction
+	move $v1, $a1 # copy data address
+	jr $ra
 
 
 
-
+# Instruction bf_get_in ','
+#
+# read a byte into the value pointer
 bf_get_in:	
-	li $v0, 12		
-	syscall			#Character will be read into $v0
-	sb $v0, 0($a1)	#Store $v0 into current data location
+	li $v0, 12
+	syscall # read byte into $v0
+	sb $v0, 0($a1)	# store $v0 into current data location
     addiu $v0, $a0, 1 # increase instr pointer by one
     move $v1, $a1 # copy data pointer
     jr $ra
 
 
+# Instruction bf_print_out '.'
+#
+# print out the byte at value pointer
 bf_print_out:
     addiu $t7, $a0, 1 # increase instr pointer by one
     move $v1, $a1 # copy data pointer
@@ -406,13 +410,4 @@ bf_print_out:
 	move $v0, $t7 	#Restore $v0
     move $v1, $a1 # copy data pointer
     jr $ra
-
-
-
-
-
-
-
-
-
 

@@ -71,7 +71,7 @@ instr_table:
 .word bf_nop # ( 40
 .word bf_nop # ) 41
 .word bf_nop # * 42
-.word incr_byte # + 43
+.word bf_incr_data # + 43
 .word bf_get_in # , 44
 .word bf_decr_byte # - 45
 .word bf_print_out # . 46
@@ -158,6 +158,8 @@ instr_table:
 .word bf_nop # (del) 127
 
 
+
+.text
 ################################################################################
 # Main Function
 #
@@ -171,8 +173,8 @@ instr_table:
 # =Register use=
 # s3 holds the end of the instr data
 ################################################################################
-.text
 # Get the input filename
+.global main
     # print out text prompt
     la $a0, request_file_text 
     li $v0, 4
@@ -182,7 +184,6 @@ instr_table:
     la $a0, file
     li $a1, 256
     syscall
-    
     
 # Open file
     # Open the file, save file descriptor in $s0
@@ -256,8 +257,7 @@ exit:
 # Brainfuck Instructions
 ################################################################################
 
-
-# Function bf_nop
+# Instruction bf_nop
 #
 # nop instruction
 #
@@ -266,36 +266,48 @@ bf_nop:
     addiu $v0, $a0, 1 # increase instr pointer by one
     move $v1, $a1 # copy data pointer
     jr $ra
-    
 
+
+# Instruction bf_incr_data_pntr '>'
+#
+# increment the data pointer
 bf_incr_data_pntr:
-	addiu $v0, $a0, 1		# increase instruction pointer
-	addiu $v1, $a1, 1		# increase data pointer
-	jr $ra				# return to main
+	addiu $v0, $a0, 1 # increase instruction pointer
+	addiu $v1, $a1, 1 # increase data pointer
+	jr $ra
 
 
+# Instruction bf_decr_data_pntr '<'
+#
+# decrement the data pointer
 bf_decr_data_pntr:
-	addiu $v0, $a0, 1		# increase instruction pointer
-	addiu $v1, $a1, -1		# decrease data pointer
-	jr $ra				# return to main
+	addiu $v0, $a0, 1 # increase instruction pointer
+	addiu $v1, $a1, -1 # decrease data pointer
+	jr $ra
 
 
-incr_byte:
+# Instruction bf_incr_data '+'
+#
+# increment the value at the data pointer
+bf_incr_data:
 	lb $t4, 0($a1)  		# load byte of data address into t4
 	addiu $t4, $t4, 1 		# increase byte of data address by 1
 	sb $t4, 0($a1) 			# store updated byte at return data address
 	addiu $v0, $a0, 1 		# increase the instruction pointer
 	move $v1, $a1			# copy data address
-	jr $ra				# return to main
-	
-	
+	jr $ra
+
+
+# Instruction bf_decr_byte '-'
+#
+# decrement the value at the data pointer
 bf_decr_byte:
 	lb $t4, 0($a1)			# load byte of data address into t5
 	addiu $t4, $t4, -1		# decrease byte of data address by 1
 	sb $t4, 0($a1)			# store updated byte at return data address
 	addiu $v0, $a0, 1		# increase the instruction pointer
 	move $v1, $a1			# copy data address
-	jr $ra				# return to main
+	jr $ra
 
 
 begin_bracket:

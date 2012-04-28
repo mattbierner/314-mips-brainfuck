@@ -14,11 +14,14 @@ main:
 # Data
 ################################################################################
 .data
+newline:  .asciiz "\n"
 request_file_text:  .asciiz "Enter a brainfuck file path: "
 file_open_error_text:  .asciiz "ERROR: There was a problem opening the requested file"
 file_read_error_text:  .asciiz "ERROR: There was a problem reading the requested file"
 
-the_file:  .asciiz "/Users/mattbierner/Documents/School/current/314 Computer Archetecture/314-mips-brainfuck/example_programs/hello.bf"
+
+# for debug, change this file path and statement below.
+the_file:  .asciiz "/Users/mattbierner/hello.bf"
 
 
 file:   .space 256 # Holds the file name
@@ -31,8 +34,8 @@ instr_table:
 .word bf_nop # (nul) 0
 .word bf_nop # (soh) 1
 .word bf_nop # (stx) 2
-.word bf_nop # (etx) 3
-.word bf_nop # (eot) 4
+.word exit # (etx) 3
+.word exit # (eot) 4
 .word bf_nop # (enq) 5
 .word bf_nop # (ack) 6
 .word bf_nop # (bel) 7
@@ -184,11 +187,25 @@ instr_table:
     la $a0, file
     li $a1, 256
     syscall
+    # get rid of newline 
+    # change file to the_file for easy debug
+    la $a1, file # why you no work QTSpim? a1 != string length?
+    jal string_len
+    la $t0, file
+    add $t0, $t0, $v0
+    addi $t0, $t0, -1 
+    sb $0, 0($t0)
+    
+    # print out newline
+    la $a0, newline 
+    li $v0, 4
+    syscall 
     
 # Open file
     # Open the file, save file descriptor in $s0
     li $v0, 13
-    la $a0, the_file # setup file path. 
+    #la $a0, the_file # setup file path. 
+    la $a0, file # setup file path. 
     li $a1, 0 # open file for reading
     li $a2, 0 # no mode
     syscall 
@@ -250,8 +267,21 @@ exit:
 	jr	$ra		#return to the main program
 	add	$0, $0, $0	#nop
     
-    
-    
+################################################################################
+# Utility Functions
+################################################################################ 
+
+string_len:
+    add $v0, $0, $0 # stores length
+string_len_check:
+    lb $t0, 0($a0)
+    beq $t0, $0, string_len_done
+    addi $v0, $v0, 1
+    addi $a0, $a0, 1
+    j string_len_check
+string_len_done:  
+    jr $ra
+
     
 ################################################################################
 # Brainfuck Instructions

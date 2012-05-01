@@ -1,0 +1,26 @@
+==============================
+314 MIPS-Brainfuck Interpreter
+==============================
+
+:Author: Matt Bierner, Urvi Patel, Kyle Patterson
+
+About
+=====
+A simple Brainfuck programming language interpreter written in MIPS for EECS 314.
+
+
+Running
+=======
+The program has been tested and runs successfully using QTSpim. To execute it, load "src/main.s" into QTSpim and execute. Enter a path to a valid Brainfuck program when prompted.
+
+I had trouble getting QTSpim to load relative path files but absolute path files always work. Also, make sure the file's permissions are set correctly.
+
+You can also edit "the_file" label and the part where the file name is loaded, with the comment "change file to the_file for easy debug" to load a file without typing in any path. This is useful for debugging.
+
+
+Details
+=======
+* All the code is heavily commented. Comments detail the overall structure of the program as well as what each line does.
+* We focused on a clean and clear implementation, not a speedy one.
+* There are two example Brainfuck programs included, hello and square. Hello is hello world and square prints out the squares from 1 to 12.
+
